@@ -24,7 +24,7 @@ class AiReply extends Model
         'input_tokens' => 'integer',
         'output_tokens' => 'integer',
         'total_tokens' => 'integer',
-    ];    
+    ];   
 
     public function review()
     {

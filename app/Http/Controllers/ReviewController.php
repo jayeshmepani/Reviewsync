@@ -32,8 +32,8 @@ class ReviewController
 
         try {
             if ($shouldSync) {
-                Log::info('Deleting old reviews for location', ['location_id' => $location->id]);
-                $location->reviews()->delete();
+                // Log::info('Deleting old reviews for location', ['location_id' => $location->id]);
+                // $location->reviews()->delete();
 
                 Log::info('Fetching new reviews for location', [
                     'shouldSync' => $shouldSync,
@@ -77,7 +77,8 @@ class ReviewController
             }
 
             // Fetch Paginated Results
-            $reviews = $query->paginate(10)->withQueryString();
+            // $reviews = $query->paginate(10)->withQueryString();
+            $reviews = $query->get();
 
             // Map Star Ratings to Numeric Values
             foreach ($reviews as $review) {
@@ -92,7 +93,8 @@ class ReviewController
             }
 
             // Pagination
-            $reviews = $query->paginate(10)->withQueryString();
+            // $reviews = $query->paginate(10)->withQueryString();
+            $reviews = $query->get();
 
             return view('businesses.reviews', [
                 'reviews' => $reviews,
@@ -112,7 +114,8 @@ class ReviewController
             $reviews = $location->reviews();
 
             return view('businesses.reviews', [
-                'reviews' => $reviews->paginate(10)->withQueryString(),
+                // 'reviews' => $reviews->paginate(10)->withQueryString(),
+                'reviews' => $reviews->$query->get(),
                 'location' => $location,
                 'searchTerm' => $request->input('search'),
                 'currentSortField' => $request->input('sort', 'reviewer_name'),
@@ -125,7 +128,7 @@ class ReviewController
     private function fetchGoogleReviews($googleId, $locationName, $locationId)
     {
         $userId = auth()->id();
-        
+
         $accessToken = decrypt(auth()->user()->google_token);
         $accessToken = json_decode($accessToken, true);
         $baseUri = "https://mybusiness.googleapis.com/v4/{$googleId}/{$locationName}/reviews";

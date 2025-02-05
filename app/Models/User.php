@@ -20,19 +20,17 @@ class User extends Authenticatable
         'email',
         'email_verified',
         'first_name',
-        'google_avatar_original',
-        'google_expires_in',
-        'google_id',
-        'google_refresh_token',
-        'google_scopes',
-        'google_token',
         'last_name',
+        'google_id',
+        'google_token',
         'name',
         'password',
-        'phone',
         'profile_picture',
         'uuid',
-        'role'
+        'role',
+        'subscription',
+        'subscription_billing_start',
+        'subscription_billing_end'
     ];
 
     /**
@@ -42,7 +40,6 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
-        'remember_token',
     ];
 
     /**
@@ -55,8 +52,26 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'subscription_billing_start' => 'datetime',
+            'subscription_billing_end' => 'datetime',
         ];
     }
+
+    public function isTrial()
+    {
+        return $this->subscription === 'trial';
+    }
+
+    public function isStandard()
+    {
+        return $this->subscription === 'standard';
+    }
+
+    public function isPremium()
+    {
+        return $this->subscription === 'premium';
+    }
+
 
     public function reviews()
     {
@@ -70,8 +85,14 @@ class User extends Authenticatable
 
     public function isSuperAdmin()
     {
-        return $this->role === 'superadmin';
+        return $this->role === 'superadmin' && is_null($this->subscription);
     }
+
+    public function isUser()
+    {
+        return $this->role === 'user';
+    }
+
 
     // Scope to exclude superadmin from regular queries
     public function scopeRegularUsers($query)

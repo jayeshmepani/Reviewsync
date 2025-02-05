@@ -46,7 +46,8 @@ class ProfileController
         $sortDirection = in_array($sortDirection, ['asc', 'desc']) ? $sortDirection : 'asc';
         $query->orderBy('title', $sortDirection);
         
-        $locations = $query->paginate(10)->withQueryString();
+        $locations = $query->get();
+        // $locations = $query->paginate(10)->withQueryString();
         
         foreach($locations as $location) {
             $reviewLink = $location->new_review_uri ?? 
@@ -65,7 +66,7 @@ class ProfileController
                 $location->website = $location->website_uri;
             }
         }
-    
+
         return view('businesses.info', [
             'user' => $user,
             'locations' => $locations,

@@ -127,7 +127,8 @@ Table "users" {
   "created_at" timestamp [default: NULL]
   "updated_at" timestamp [default: NULL]
   "deleted_at" timestamp [default: NULL]
-  "role" varchar(255) [not null, default: 'user']
+  "role" enum('user','superadmin') [not null, default: 'user']
+  "subsciption" enum('trial','standard','premium') [not null, default: 'trial']
 
   Indexes {
     email [unique, name: "users_email_unique"]

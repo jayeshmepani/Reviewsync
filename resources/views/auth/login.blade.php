@@ -34,8 +34,21 @@
                 </button>
             </div>
 
+            <!-- Remember Me Checkbox -->
+            <div class="input-field col s12">
+                <label>
+                    <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
+                    <span>Remember Me</span>
+                </label>
+            </div>
+
             <div class="center-align">
                 <button type="submit" class="btn waves-effect waves-light">Login</button>
+            </div>
+
+            <!-- Forgot Password Link -->
+            <div class="center-align">
+                <a href="{{ route('password.request') }}">Forgot Your Password?</a>
             </div>
 
             <div class="or-separator">

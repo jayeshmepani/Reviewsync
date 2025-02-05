@@ -14,6 +14,25 @@
         :root {
             --bg-light: hsl(222 9 91% / 1);
             --text-light: #333333;
+            --degree: 37deg;
+            --distance: 0.29ch;
+        }
+
+        .breadcrumb {
+            margin-bottom: 15px;
+            font-size: 20px;
+            color: #555;
+            font-weight: 500;
+            margin-inline: 1rem;
+        }
+
+        .breadcrumb a {
+            text-decoration: none;
+            color: #007BFF;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
         }
 
         body :is(button, a, .btn) {
@@ -58,10 +77,11 @@
             top: 1rem;
 
             &.active {
-                transform: translateX(16rem);
+                transform: translateX(15rem);
 
                 .hamburger-line:nth-child(1) {
-                    transform: rotate(-45deg) translate(-50%, -0.1ch);
+                    transform: rotate(calc(0deg - var(--degree))) translateY(calc(0ch - var(--distance)));
+                    transform-origin: right;
                 }
 
                 .hamburger-line:nth-child(2) {
@@ -69,12 +89,13 @@
                 }
 
                 .hamburger-line:nth-child(3) {
-                    transform: rotate(45deg) translate(-50%, -0.1ch);
+                    transform: rotate(var(--degree)) translateY(var(--distance));
+                    transform-origin: right;
                 }
             }
 
             .hamburger-line {
-                width: 25px;
+                width: 19px;
                 height: 3px;
                 background-color: white;
                 margin: 3px 0;
@@ -133,8 +154,6 @@
             >* {
                 width: -webkit-fill-available;
                 padding: 0.5rem;
-                margin: 0;
-                border-bottom: 1px solid gray;
                 border-radius: 0 !important;
                 font-size: 1rem !important;
 
@@ -157,7 +176,7 @@
                 transform: translateX(0);
 
                 &.active {
-                    transform: translateX(16rem);
+                    transform: translateX(15rem);
                 }
             }
 
@@ -173,10 +192,13 @@
         @media screen and (min-width: 769px) {
             .hamburger {
                 display: flex;
-                transform: translateX(16rem);
+                transform: translateX(15rem);
 
                 .hamburger-line:nth-child(1) {
-                    transform: rotate(-45deg) translate(-50%, -0.1ch);
+                    /* transform: rotate(-45deg) translate(-50%, -0.1ch); */
+
+                    transform: rotate(calc(0deg - var(--degree))) translateY(calc(0ch - var(--distance)));
+                    transform-origin: right;
                 }
 
                 .hamburger-line:nth-child(2) {
@@ -184,7 +206,10 @@
                 }
 
                 .hamburger-line:nth-child(3) {
-                    transform: rotate(45deg) translate(-50%, -0.1ch);
+                    /* transform: rotate(45deg) translate(-50%, -0.1ch); */
+
+                    transform: rotate(var(--degree)) translateY(var(--distance));
+                    transform-origin: right;
                 }
 
                 &:not(.active) {
@@ -548,11 +573,13 @@
                 <a href="{{ route('dashboard') }}" class="{{ Request::routeIs('dashboard') ? 'active' : '' }}">
                     <i class="material-icons">dashboard</i> Dashboard
                 </a>
-
+                <hr style="display:block !important; padding:0;">
                 <a href="{{ route('businesses') }}" class="{{ Request::routeIs('businesses') ? 'active' : '' }}">
                     <i class="material-icons">business</i> Businesses
                 </a>
-                <a href="{{ route('subscriptions.index') }}" class="{{ Request::routeIs('subscriptions.index') ? 'active' : '' }}">
+                <hr style="display:block !important; padding:0;">
+                <a href="{{ route('subscriptions.index') }}"
+                    class="{{ Request::routeIs('subscriptions.index') ? 'active' : '' }}">
                     <i class="material-icons">subscriptions</i> Subscription
                 </a>
             @endguest

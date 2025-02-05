@@ -35,41 +35,26 @@ class BusinessController
 
         $businesses = Auth::user()->locations;
 
-        // Modified query to include user_id filter
-        $tokenData = DB::table('ai_replies')
-            ->where('user_id', Auth::id()) // Only get data for authenticated user
-            ->selectRaw('
-                DATE_FORMAT(DATE_SUB(created_at, INTERVAL SECOND(created_at) % 3 SECOND), "%Y-%m-%d %H:%i:00") as grouped_time,
-                input_tokens,
-                output_tokens
-            ')
-            ->groupBy('grouped_time', 'input_tokens', 'output_tokens')
-            ->orderBy('grouped_time')
-            ->get()
-            ->map(function ($item) {
-                $inputCost = $item->input_tokens * 0.0375 / 1000000;
-                $outputCost = $item->output_tokens * 0.15 / 1000000;
-                $item->total_cost = $inputCost + $outputCost;
+        // Get the subscription plan and corresponding limit
+        $subscriptionPlan = $user->subscription; // e.g., 'trial', 'standard', 'premium'
+        $subscriptionLimits = config('business.subscription_limits');
 
-                $item->grouped_time = \Carbon\Carbon::parse($item->grouped_time)
-                    ->format('d-M-Y h:i:s A');
+        // Fetch the limit for the user's subscription plan
+        $businessLimit = $subscriptionLimits[$subscriptionPlan] ?? 0;
 
-                Log::info('Cost Calculation:', [
-                    'user_id' => Auth::id(), // Add user_id to logging
-                    'grouped_time' => $item->grouped_time,
-                    'input_tokens' => $item->input_tokens,
-                    'output_tokens' => $item->output_tokens,
-                    'input_cost' => number_format($inputCost, 9),
-                    'output_cost' => number_format($outputCost, 9),
-                    'total_cost' => number_format($item->total_cost, 9),
-                ]);
+        // AI Reply Limits based on Subscription
+        $aiReplyLimits = [
+            'trial' => 0,
+            'standard' => 700,
+            'premium' => -1, // Unlimited
+        ];
 
-                return $item;
-            });
+        $aiReplyLimit = $aiReplyLimits[$subscriptionPlan] ?? 0;
 
-        $totalCost = $tokenData->sum('total_cost');
-
-        Log::info('Total cost for user: ' . Auth::id() . ' - ' . $totalCost);
+        // Calculate total AI replies used by the user
+        $totalAiReplies = DB::table('ai_replies')
+            ->where('user_id', $user->id)
+            ->count();
 
         // Count total businesses for authenticated user
         $totalBusinesses = $businesses->count();
@@ -79,37 +64,84 @@ class BusinessController
             return $business->reviews()->count();
         });
 
-        return view('dashboard', compact('isSync', 'businesses', 'tokenData', 'totalCost', 'totalBusinesses', 'totalReviews'));
+        // Add total AI replies for the authenticated user
+        $totalAiReplies = DB::table('ai_replies')
+            ->where('user_id', Auth::id()) // Filter by authenticated user
+            ->count();
+
+        Log::info('Total AI replies for user: ' . Auth::id() . ' - ' . $totalAiReplies);
+
+        return view('dashboard', compact(
+            'isSync',
+            'businesses',
+            'totalBusinesses',
+            'totalReviews',
+            'totalAiReplies',
+            'businessLimit',
+            'aiReplyLimit'
+        ));
     }
 
     public function showSyncOptions()
     {
+        $user = Auth::user();
         $syncLocations = new SyncLocations();
-        $availableLocations = $syncLocations->fetchLocations(Auth::id());
-        
+        $availableLocations = $syncLocations->fetchLocations($user->id);
+
         if (!$availableLocations) {
             return redirect()->route('dashboard')->with('error', 'Failed to fetch locations!');
         }
 
+        $trialLimit = config('business.subscription_limits.trial');
+
+        if ($user->subscription === 'trial') {
+            // Count existing synced locations
+            $existingCount = Location::where('user_id', $user->id)->count();
+
+            if ($existingCount >= $trialLimit) {
+                return redirect()->route('dashboard')
+                    ->with('error', "Trial users can only sync up to {$trialLimit} business(es). Please upgrade for more.");
+            }
+
+            // Calculate remaining slots
+            $remainingSlots = $trialLimit - $existingCount;
+        }
+
         return view('businesses.sync-options', [
-            'locations' => $availableLocations
+            'locations' => $availableLocations,
+            'isTrialUser' => $user->subscription === 'trial',
+            'trialLimit' => $trialLimit,
+            'remainingSlots' => $remainingSlots ?? null,
         ]);
     }
 
     public function sync(Request $request)
     {
+        $user = Auth::user();
         $selectedLocations = $request->input('selected_locations', []);
-        
+
         if (empty($selectedLocations)) {
             return redirect()->route('dashboard')->with('error', 'Please select at least one business!');
         }
 
-        $success = (new SyncLocations)->executeSelected(Auth::id(), $selectedLocations);
-        
+        if ($user->subscription === 'trial') {
+            $trialLimit = config('business.subscription_limits.trial');
+            $existingCount = Location::where('user_id', $user->id)->count();
+            $selectionCount = count($selectedLocations);
+
+            if (($existingCount + $selectionCount) > $trialLimit) {
+                return redirect()->route('dashboard')
+                    ->with('error', "Trial users can only sync up to {$trialLimit} business(es). Please upgrade for more.");
+            }
+        }
+
+        $success = (new SyncLocations)->executeSelected($user->id, $selectedLocations);
+
         if (!$success) {
             return redirect()->route('dashboard')->with('error', 'Failed to sync locations!');
         }
 
-        return redirect()->route('dashboard')->with('success', 'Selected locations synced successfully!');
+        return redirect()->route('dashboard')
+            ->with('success', 'Business(es) synced successfully!');
     }
 }

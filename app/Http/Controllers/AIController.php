@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,19 @@ use Google\Cloud\Gemini\V1\GenerateContentResponse;
 
 class AIController
 {
+    private const STANDARD_PLAN_LIMIT = 700;
+
+    private function getRemainingReplies($userId)
+    {
+        $usedReplies = AiReply::where('user_id', $userId)->count();
+
+        if (Auth::user()->subscription === 'standard') {
+            return max(0, self::STANDARD_PLAN_LIMIT - $usedReplies);
+        }
+
+        return PHP_INT_MAX;
+    }
+
     public function index()
     {
         Log::info('Accessing AI generation view', ['user_id' => Auth::id()]);
@@ -39,17 +53,36 @@ class AIController
             }
 
             $numReplies = $request->input('num_replies', 1);
-            $startFrom = $request->input('start_from', 0);
+            $remainingReplies = $this->getRemainingReplies(Auth::id());
 
-            $response = $this->generateAppropriateResponse($review, $numReplies, $startFrom);
+            // Check if user has enough remaining replies
+            if ($remainingReplies <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Reply limit reached for your plan',
+                    'remaining_replies' => 0,
+                    'disable_buttons' => true
+                ], 403);
+            }
+
+            // Adjust number of replies if it would exceed the limit
+            if ($numReplies > $remainingReplies) {
+                $numReplies = $remainingReplies;
+            }
+
+            $response = $this->generateAppropriateResponse($review, $numReplies);
+
+            // Get updated remaining replies after generation
+            $updatedRemainingReplies = $this->getRemainingReplies(Auth::id());
 
             return response()->json([
                 'success' => true,
                 'replies' => $response['replies'],
-                'total_count' => $startFrom + count($response['replies'])
+                'remaining_replies' => $updatedRemainingReplies,
+                'disable_buttons' => $updatedRemainingReplies <= 0
             ]);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Error during AI reply generation', [
                 'error' => $e->getMessage(),
                 'user_id' => Auth::id(),
@@ -63,8 +96,17 @@ class AIController
         }
     }
 
-    private function createPrompt($review, $numReplies)
+    private function createPrompt($review, $numReplies, $detectedLanguage)
     {
+        // Extract only the original text if a translation exists
+        $comment = $review->comment;
+    
+        if (str_contains($comment, "(Original)")) {
+            // Extract text after "(Original)"
+            $commentParts = explode("(Original)", $comment);
+            $comment = trim(end($commentParts)); // Take the last part (original text)
+        }
+    
         $toneAndStructure = match ($review->star_rating) {
             1, 2 => [
                 "tone" => "- Express sincere apology and urgent commitment to resolution\n- Professional yet empathetic tone\n- Include specific solution steps",
@@ -92,26 +134,29 @@ class AIController
                 "emoticon" => "Do not use emoticons"
             ]
         };
-
+    
         return "Review Details:
         Star Rating: {$review->star_rating}/5
         Customer Name: {$review->reviewer_name}
-        Review: '{$review->comment}'
+        Review (Original Language Only): '{$comment}'
+        Language of review: {$detectedLanguage}
         
         Instructions:
         Generate exactly {$numReplies} unique customer service replies following these guidelines:
         
         1. Language & Style:
-        - Use the same language as the review
+        - Use the same language as the review (original language only, do NOT use translated versions)
         - Use proper grammar and punctuation
-        - Keep customer name unchanged (no translation)
         - Natural, conversational tone
         - Avoid generic customer service phrases
+        - Keep customer name unchanged (no translation, no transliteration)
+        Example: If the name is Jay Mepani, it should remain Jay Mepani in all languages
         
         2. Response Format:
         - Each reply should be 1-50 words based on context
         - Include reviewer's name naturally within response (never at start)
         - End with forward-looking statement or gratitude
+        - Ensure the response is entirely in the target language except for necessary transliterations.
         
         3. Tone Guidelines:
         {$toneAndStructure['tone']}
@@ -139,8 +184,38 @@ class AIController
         - Vary greeting and closing phrases
         - Don't overuse customer's name
         - Avoid perfectly structured sentences
+    
+        8. Original Language Only:
+        - Use only the original language from the review
+        - Do not use 'Translated by Google' or any translated content
+        - Do not add any language indicators like 'Original' or 'Translated' in responses
+
+        9. Translation & Transliteration Rules:
+            9.1 Translation Priority:
+            - Always prioritize a natural and legitimate translation within the target language when an English word appears.
+            - Use contextually appropriate translations instead of relying on transliteration.
+            - Refer to '9.3 Some Examples' when determining proper translations (provided separately).
+            - DO NOT use transliteration if a proper translation already exists.
+            
+            9.2 Transliteration (Last Resort):
+            - If an English word has no natural and legitimate translation in the target language, use transliteration instead of leaving it in English.
+            - Ensure transliterations sound natural and follow the phonetics of the target language.
+
+            9.3 Some Examples:
+            - English Word → Gujarati (Preferred Translation / Transliteration) , Hindi (Preferred Translation / Transliteration)
+            - Feedback → પ્રતિભાવ (preferred) / ફીડબેક (transliterated) , प्रतिक्रिया (preferred) / फीडबैक (transliterated)
+            - Features → સુવિધાઓ (preferred) / ફીચર્સ (transliterated) , विशेषताएँ (preferred) / फीचर्स (transliterated)
+            - Issues → મુદ્દાઓ or સમસ્યાઓ (preferred) / ઇશ્યુઝ (transliterated)
+
+            Contextual Example (Gujarati):
+            - Input: મને આ એપ બહુ ગમી, પણ થોડા ફીચર્સ ખૂટે છે.
+            - Output: Jay Mepani, તમારા પ્રતિભાવ માટે આભાર! અમે નવી સુવિધાઓ ઉમેરવા માટે કામ કરી રહ્યા છીએ. (Uses સુવિધાઓ instead of ફીચર્સ)
+
+            Contextual Example (Hindi):
+            - Input: यह ऐप मुझे बहुत पसंद आया, लेकिन कुछ फीचर्स कम हैं।
+            - Output: Jay Mepani, आपकी प्रतिक्रिया के लिए धन्यवाद! हम विशेषताओं को जोड़ने पर काम कर रहे हैं। (Uses विशेषताएँ instead of फीचर्स)
         
-        FORMAT OF RESPONSE:
+        10. FORMAT OF RESPONSE:
         - Return ONLY {$numReplies} replies
         - Each reply on a new line
         - No numbering, analysis, or additional text
@@ -148,6 +223,37 @@ class AIController
         - Just the replies, nothing else";
     }
 
+    private function detectLanguage($text)
+    {
+        Log::info('Starting language detection', [
+            'text_length' => strlen($text)
+        ]);
+
+        $languageDetectionPrompt = "Detect the language of the following text. Return ONLY the name of the language (in English) with no additional explanation or text:
+
+        Text: '{$text}'";
+
+        try {
+            $languageResponse = Gemini::generativeModel('models/gemini-1.5-flash-8b-001')
+                ->generateContent($languageDetectionPrompt);
+
+            $detectedLanguage = trim($languageResponse->text());
+
+            Log::info('Language Detection Result', [
+                'detected_language' => $detectedLanguage
+            ]);
+
+            return $detectedLanguage;
+        } catch (Exception $e) {
+            Log::error('Language Detection Error', [
+                'error' => $e->getMessage(),
+                'text' => $text
+            ]);
+
+            return 'Unknown';
+        }
+    }
+    
     private function generateAppropriateResponse($review, $numReplies)
     {
         Log::info('Starting response generation', [
@@ -155,7 +261,28 @@ class AIController
             'requested_replies' => $numReplies
         ]);
 
-        $responsePrompt = $this->createPrompt($review, $numReplies);
+        $comment = $review->comment ?? '';
+        
+        // Remove translation markers if present
+        if (str_contains($comment, "(Original)")) {
+            $commentParts = explode("(Original)", $comment);
+            $comment = trim(end($commentParts));
+        }
+
+        // Validate comment is not empty
+        if (empty($comment)) {
+            Log::error('Empty comment for review', [
+                'review_id' => $review->id,
+                'original_comment' => $review->comment
+            ]);
+            
+            // Return empty replies or handle as needed
+            return ['replies' => []];
+        }
+
+        $detectedLanguage = $this->detectLanguage($comment);
+
+        $responsePrompt = $this->createPrompt($review, $numReplies, $detectedLanguage);
 
         Log::info('Calling Gemini API', [
             'review_id' => $review->id,
@@ -167,23 +294,18 @@ class AIController
         $response = Gemini::generativeModel('models/gemini-1.5-flash-8b-001')
             ->generateContent($responsePrompt);
 
-        // Check if the response is an object and convert it to a string or array if needed
-        if (is_object($response)) {
-            if (method_exists($response, 'toArray')) {
-                $responseContent = $response->toArray(); // Convert to array if method exists
-            } elseif (method_exists($response, 'toJson')) {
-                $responseContent = json_decode($response->toJson(), true); // Convert JSON string to array
-            } else {
-                $responseContent = (array) $response; // Fallback: Convert object to array
+        function prettifyJson($data)
+        {
+            if (is_string($data)) {
+                $decodedData = json_decode($data, true);
+                $data = $decodedData ?: json_decode(json_encode($data), true);
             }
-        } else {
-            // If response is already a string, decode it
-            $responseContent = json_decode($response, true);
+            return json_encode($data, JSON_PRETTY_PRINT);
         }
 
-        // Log the decoded response
-        Log::info('Gemini Response:', ['response' => $responseContent]);
+        $geminiResponse = ['response' => $response];
 
+        Log::info("Gemini Response:\n" . prettifyJson($geminiResponse));
 
         Log::info('Received Gemini API response', [
             'review_id' => $review->id,
@@ -253,7 +375,7 @@ class AIController
                     'reply_index' => $index + 1
                 ]);
 
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Log::error('Error storing AI reply', [
                     'review_id' => $review->id,
                     'user_id' => Auth::id(),
@@ -262,7 +384,6 @@ class AIController
                 ]);
             }
         }
-
 
         return ['replies' => $replies];
     }
@@ -280,39 +401,51 @@ class AIController
                 'append' => 'nullable|in:0,1,true,false',
             ]);
 
-            Log::info('Request validation passed', [
-                'review_id' => $reviewId,
-                'num_replies' => $request->input('num_replies'),
-                'append' => $request->input('append')
-            ]);
+            // Check remaining replies BEFORE generating new ones
+            $remainingReplies = $this->getRemainingReplies(Auth::id());
+
+            if ($remainingReplies <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Reply limit reached for your plan',
+                    'remaining_replies' => 0,
+                    'disable_buttons' => true
+                ], 403);
+            }
 
             $review = Review::findOrFail($reviewId);
-            $numReplies = $request->input('num_replies', 1);
+            $numReplies = min($request->input('num_replies', 1), $remainingReplies);
             $append = filter_var($request->input('append', false), FILTER_VALIDATE_BOOLEAN);
 
             Log::info('Generating responses', [
                 'review_id' => $reviewId,
                 'num_replies' => $numReplies,
+                'remaining_replies' => $remainingReplies,
                 'append_mode' => $append
             ]);
 
             $response = $this->generateAppropriateResponse($review, $numReplies);
 
-            Log::info('Response generation completed', [
-                'review_id' => $reviewId,
-                'generated_replies' => count($response['replies'])
-            ]);
+            // Get updated remaining replies after generation
+            $updatedRemainingReplies = $this->getRemainingReplies(Auth::id());
 
             if ($append) {
-                return response()->json(['replies' => $response['replies']]);
+                return response()->json([
+                    'success' => true,
+                    'replies' => $response['replies'],
+                    'remaining_replies' => $updatedRemainingReplies,
+                    'disable_buttons' => $updatedRemainingReplies <= 0
+                ]);
             }
 
             return response()->json([
                 'success' => true,
-                'replies' => $response['replies']
+                'replies' => $response['replies'],
+                'remaining_replies' => $updatedRemainingReplies,
+                'disable_buttons' => $updatedRemainingReplies <= 0
             ]);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Error fetching AI replies', [
                 'review_id' => $reviewId,
                 'error_message' => $e->getMessage(),
@@ -347,7 +480,7 @@ class AIController
                 'replies' => $replies,
                 'total_count' => $replies->count()
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Error fetching stored replies', [
                 'review_id' => $reviewId,
                 'user_id' => Auth::id(),
@@ -357,6 +490,26 @@ class AIController
             return response()->json([
                 'success' => false,
                 'error' => 'Failed to fetch stored replies'
+            ], 500);
+        }
+    }
+
+    public function checkReplyStatus($reviewId)
+    {
+        try {
+            $remainingReplies = $this->getRemainingReplies(Auth::id());
+            $totalReplies = AiReply::where('user_id', Auth::id())->count();
+
+            return response()->json([
+                'success' => true,
+                'remaining_replies' => $remainingReplies,
+                'total_replies' => $totalReplies,
+                'disable_buttons' => $remainingReplies <= 0
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Error checking reply status'
             ], 500);
         }
     }

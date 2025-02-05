@@ -22,8 +22,8 @@ class LocationFactory extends Factory
         return [
             'uuid' => Uuid::uuid4()->toString(),
             'store_code' => $this->faker->bothify('SC-####'),
-            'name' => $this->faker->company(),
-            'title' => $this->faker->companySuffix(),
+            'title' => $this->faker->company(),
+            'name' => $this->faker->companySuffix(),
             'website_uri' => $this->faker->url(),
             'primary_phone' => $this->faker->phoneNumber(),
             'primary_category' => $this->faker->word(),

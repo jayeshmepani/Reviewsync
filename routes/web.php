@@ -8,7 +8,8 @@ use App\Http\Controllers\{
     ReviewController,
     AIController,
     SuperAdminController,
-    SubscriptionController
+    SubscriptionController,
+    PaymentController
 };
 use App\Http\Middleware\{HandleCors, SuperAdminMiddleware};
 use App\Models\Location;
@@ -32,6 +33,12 @@ Route::prefix('auth')->group(function () {
         Route::post('/signup', [AuthController::class, 'signUp'])->name('signup.submit');
         Route::get('/register', [AuthController::class, 'showSignupForm'])->name('register');
         Route::post('/register', [AuthController::class, 'signUp'])->name('register.submit');
+
+        // Forgot Password Routes
+Route::get('/forgot-password', [AuthController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [AuthController::class, 'reset'])->name('password.update');
     });
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -47,6 +54,7 @@ Route::prefix('superadmin')->middleware(['auth', 'superadmin'])->group(function 
     Route::get('/users/{id}/data', [SuperAdminController::class, 'viewUserData'])->name('superadmin.users.data');
     Route::delete('/users/{id}', [SuperAdminController::class, 'deleteUser'])->name('superadmin.users.delete');
     Route::delete('/users/{id}/data', [SuperAdminController::class, 'deleteLocation'])->name('superadmin.users.data.delete');
+    Route::get('/profile', [SuperAdminController::class, 'profile'])->name('superadmin.profile');
 });
 Route::get('/superadmin', [AuthController::class, 'createSuperAdmin']);
 
@@ -54,12 +62,20 @@ Route::get('/superadmin', [AuthController::class, 'createSuperAdmin']);
 Route::middleware(['auth', HandleCors::class])->group(function () {
 
     Route::get('subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
+    Route::post('choose-plan', [SubscriptionController::class, 'choosePlan'])->name('subscription.choose');
+    Route::post('/get-plan-details', [SubscriptionController::class, 'getPlanDetails']);
+
+    Route::post('/checkout', [PaymentController::class, 'checkout'])->name('checkout');
+    Route::get('/payment/success', [PaymentController::class, 'success'])->name('payment.success');
+    Route::get('/payment/cancel', [PaymentController::class, 'cancel'])->name('payment.cancel');
 
     // AI Routes
     Route::prefix('api/reviews/{reviewId}')->group(function () {
         Route::get('/ai-replies', [AIController::class, 'fetchAIReplies']);
         Route::get('/stored-replies', [AIController::class, 'getStoredReplies']);
     });
+    
+    Route::get('/ai/check-reply-status/{reviewId}', [AIController::class, 'checkReplyStatus']);
 
     Route::get('/aigeneration', [AIController::class, 'index'])->name('aigeneration.form');
 

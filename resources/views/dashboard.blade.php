@@ -12,10 +12,12 @@
     <div class="cards">
         @if ($isSync)
                 <div class="card">
-                    <span class="card-title"><i class="material-icons">
-                            business_center
-                        </i>Total Businesses</span>
-                    <p>{{ $totalBusinesses ?? 0 }}</p>
+                    <span class="card-title">
+                        <i class="material-icons">business_center</i> Total Businesses
+                    </span>
+                    <p>
+                        {{ $totalBusinesses ?? 0 }}/{{ $businessLimit === -1 ? '∞' : $businessLimit }}
+                    </p>
                 </div>
                 <div class="card">
                     <span class="card-title"><i class="material-icons">
@@ -24,18 +26,14 @@
                     <p>{{ $totalReviews ?? 0 }}</p>
                 </div>
                 <div class="card">
-                    <span class="card-title"><i class="material-icons">
-                            attach_money
-                        </i>Total AI Usage</span>
-                    <p>${{ $tokenData->isEmpty() ? '0.000000000' : number_format($totalCost, 9) }}</p>
+                    <span class="card-title">
+                        <i class="material-icons">auto_awesome</i>
+                        Total AI Replies
+                    </span>
+                    <p>
+                        {{ $totalAiReplies ?? 0 }}/{{ $aiReplyLimit === -1 ? '∞' : $aiReplyLimit }}
+                    </p>
                 </div>
-            </div>
-            <div class="col s12">
-                @if(!$tokenData->isEmpty())
-                    <div id="tokenCostChart"></div>
-                @else
-                    <p class="center-align">No cost data available.</p>
-                @endif
             </div>
         @else
             <a class="glogin" href="{{ route('auth.google') }}">Google Login</a>
@@ -99,16 +97,13 @@
             }
         }
 
+        p.center-align{
+            margin-bottom: 1rem;
+        }
+
         div.container {
             display: grid;
             justify-items: center;
-        }
-
-        #tokenCostChart {
-            padding: 0.5rem 1rem 1rem 0.5rem;
-            width: min(90%, 1200px) !important;
-            background: white;
-            height: min(745px, 70%) !important;
         }
 
         .col.s12 {
@@ -169,76 +164,5 @@
             }
         }
     </style>
-@endpush
-
-@push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const tokenData = @json($tokenData);
-            const labels = tokenData.map(data => data.grouped_time);
-            const costs = tokenData.map(data => Number(data.total_cost));
-
-            const options = {
-                chart: {
-                    type: 'line',
-                    height: window.innerWidth < 1218 ? '425px' : '555px',
-                    width: '100%',
-                    zoom: { enabled: true },
-                    toolbar: { show: true }
-                },
-                series: [{
-                    name: 'Token Usage Cost ($)',
-                    data: costs
-                }],
-                xaxis: {
-                    categories: labels,
-                    title: {
-                        text: 'Timestamp'
-                    }
-                },
-                yaxis: {
-                    title: {
-                        text: 'Cost ($)'
-                    },
-                    labels: {
-                        formatter: function (value) {
-                            return value.toFixed(9);
-                        }
-                    }
-                },
-                tooltip: {
-                    y: {
-                        formatter: function (value) {
-                            return `$${value.toFixed(9)}`;
-                        }
-                    }
-                },
-                stroke: {
-                    curve: 'smooth',
-                    width: 2
-                },
-                dataLabels: {
-                    enabled: false
-                },
-                grid: {
-                    borderColor: '#f1f1f1'
-                }
-            };
-
-            const chart = new ApexCharts(document.querySelector("#tokenCostChart"), options);
-            chart.render();
-
-            window.addEventListener('resize', () => {
-                const newHeight = window.innerWidth < 1218 ? '425px' : '555px';
-                chart.updateOptions({
-                    chart: {
-                        height: newHeight
-                    }
-                });
-            });
-        });
-    </script>
 @endpush
 @endsection

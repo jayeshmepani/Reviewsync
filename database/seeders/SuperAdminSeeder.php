@@ -29,6 +29,7 @@ class SuperAdminSeeder extends Seeder
                 'email' => $superadminEmail,
                 'password' => Hash::make('superadmin123'),
                 'role' => 'superadmin',
+                'subscription' => null,
                 'email_verified' => true,
                 'first_name' => 'Super',
                 'last_name' => 'Admin',

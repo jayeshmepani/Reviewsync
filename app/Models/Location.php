@@ -44,7 +44,7 @@ class Location extends Model
         return $this->hasMany(LocalReview::class);
     }
 
-       /**
+    /**
      * Get the user that owns the location.
      */
     public function user()

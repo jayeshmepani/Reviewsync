@@ -6,6 +6,7 @@ use App\Interfaces\TokenStorageInterface;
 use App\Models\Location;
 use App\Models\User;
 use App\Services\GoogleAuthService;
+use Carbon\Carbon;
 use Exception;
 use Google\Client;
 use Google\Service\MyBusinessAccountManagement;
@@ -168,8 +169,9 @@ class GoogleAuthController
                     'email' => $profileData['email'],
                     'google_id' => $account->getName(),
                     'password' => bcrypt('admin123'),
+                    'subscription_billing_start' => Carbon::now(),
+                    'subscription_billing_end' => Carbon::now()->addMonth(),
                 ]);
-
 
                 Auth::login($user);
 
