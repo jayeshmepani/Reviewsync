@@ -22,3 +22,6 @@ yarn-error.log
 /.zed
 /oauth-credentials.json
 *json
+*py
+public/images/reviewers/*
+public/images/profiles/*
