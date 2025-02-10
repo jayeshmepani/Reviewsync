@@ -272,6 +272,37 @@
             --clamp: 7;
         }
 
+        .alert.alert-success {
+            background: hsl(215deg 37% 23%) !important;
+            color: white !important;
+            padding: 1rem;
+            width: max-content;
+            margin: auto;
+            margin-block: 1rem;
+            float: inline-end;
+            margin-inline-end: 1rem;
+            z-index: 1000;
+            opacity: 1;
+            animation: fadeOutUp 2.22s ease-out forwards;
+        }
+
+        @keyframes fadeOutUp {
+
+            0%,
+            17% {
+                opacity: 1;
+                transform: translateY(0);
+                scale: 1;
+            }
+
+            100% {
+                opacity: 0;
+                scale: 0.97;
+                transform: translateY(-123%);
+                display: none;
+            }
+        }
+
         .profile-avatar {
             right: 0 !important;
         }
