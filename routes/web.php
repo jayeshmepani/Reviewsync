@@ -105,7 +105,7 @@ Route::middleware(['auth', HandleCors::class])->group(function () {
             Route::get('/', [ReviewController::class, 'index'])->name('businesses.reviews');
             Route::get('/search', [ReviewController::class, 'search'])->name('review.search');
             Route::post('/{reviewId}/reply', [ReviewController::class, 'replyToReview'])->name('reviews.reply');
-            Route::put('/{reviewId}/reply', [ReviewController::class, 'updateReply'])->name('reviews.reply.update'); // <-- Added update route
+            Route::put('/{reviewId}/reply', [ReviewController::class, 'updateReply'])->name('reviews.reply.update');
             Route::delete('/{reviewId}/reply', [ReviewController::class, 'deleteReply'])->name('reviews.reply.delete');
         });
 
