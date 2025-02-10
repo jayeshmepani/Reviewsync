@@ -25,3 +25,5 @@ yarn-error.log
 *py
 public/images/reviewers/*
 public/images/profiles/*
+storage/logs/*
+.txt
