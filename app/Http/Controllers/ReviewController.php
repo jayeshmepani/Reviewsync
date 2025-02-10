@@ -151,7 +151,7 @@ class ReviewController
 
                 $token = $this->client->ensureToken();
 
-                if (! $token || ! $googleId) {
+                if (!$token || !$googleId) {
                     return $this->success(__('Token is missing. Redirecting to authorization.'), Response::HTTP_OK, [
                         'error' => true,
                         'auth_url' => $this->client->createAuthUrl(),
@@ -281,6 +281,42 @@ class ReviewController
         return abort(403, 'Unauthorized action.');
     }
 
+    public function updateReply(Request $request, $id, $reviewId)
+    {
+        $request->validate([
+            'reply' => 'required|string|max:255',
+        ]);
+
+        $location = Location::findOrFail($id);
+        $review = Review::where('id', $reviewId)
+            ->where('location_id', $id)
+            ->firstOrFail();
+
+        if (Auth::user() && Auth::id() === $location->user_id) {
+            try {
+                $this->postGoogleReviewReply(
+                    Auth::user()->google_id,
+                    $location->name,
+                    $review->review_id,
+                    $request->input('reply')
+                );
+
+                $review->update([
+                    'reply_comment' => $request->input('reply'),
+                    'reply_update_time' => now(),
+                ]);
+
+                return back()->with('success', 'Reply updated successfully!');
+            } catch (Exception $e) {
+                Log::error('Error updating reply: ' . $e->getMessage());
+                return back()->with('error', 'Failed to update reply. Please try again later.');
+            }
+        }
+
+        return abort(403, 'Unauthorized action.');
+    }
+
+
     private function postGoogleReviewReply($googleId, $locationName, $reviewId, $replyText)
     {
         $this->client = new GoogleAuthService(auth()->id());
@@ -371,7 +407,6 @@ class ReviewController
         $accessToken = decrypt(auth()->user()->google_token);
         $accessToken = json_decode($accessToken, true);
         $uri = "https://mybusiness.googleapis.com/v4/{$googleId}/{$locationName}/reviews/{$reviewId}/reply";
-
 
         try {
             $response = Http::withHeaders([
