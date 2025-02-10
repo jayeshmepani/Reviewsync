@@ -175,16 +175,27 @@
                                                         </div>
 
                                                         <div class="mt-2 btns">
-                                                            <button type="submit" class="btn btn-primary">
-                                                                {{ $review->reply_comment ? 'Update Reply' : 'Submit Reply' }}
-                                                            </button>
                                                             @if($review->reply_comment)
+                                                                <form method="POST"
+                                                                    action="{{ route('reviews.reply.update', ['id' => $location->id, 'reviewId' => $review->id]) }}"
+                                                                    class="d-inline">
+                                                                    @csrf
+                                                                    @method('PUT')
+                                                                    <button type="submit" class="btn btn-primary mt-2">Update Reply</button>
+                                                                </form>
+
                                                                 <form method="POST"
                                                                     action="{{ route('reviews.reply.delete', ['id' => $location->id, 'reviewId' => $review->id]) }}"
                                                                     class="d-inline">
                                                                     @csrf
                                                                     @method('DELETE')
-                                                                    <button type="submit" class="btn btn-danger">Delete Reply</button>
+                                                                    <button type="submit" class="btn btn-danger mt-2">Delete Reply</button>
+                                                                </form>
+                                                            @else
+                                                                <form method="POST"
+                                                                    action="{{ route('reviews.reply', ['id' => $location->id, 'reviewId' => $review->id]) }}">
+                                                                    @csrf
+                                                                    <button type="submit" class="btn btn-primary mt-2">Submit Reply</button>
                                                                 </form>
                                                             @endif
                                                         </div>
@@ -1298,3 +1309,4 @@
         }
     </script>
 @endpush
+
