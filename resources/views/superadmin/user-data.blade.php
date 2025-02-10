@@ -57,92 +57,93 @@
         <h3 class="text-xl font-semibold mb-4">Recent Reviews & AI Replies</h3>
         <div class="space-y-4">
             @forelse($user->locations as $location)
-                        @foreach($location->reviews as $review)
-                                    <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                                        <div class="mb-2">
-                                            <div class="flex justify-between items-start">
-                                                <div>
-                                                    <p class="font-semibold">Review for {{ $location->title }}</p>
-                                                    <p class="text-sm text-gray-500">Posted: {{ $review->created_at->format('M d, Y H:i') }}</p>
-                                                    <p class="pt-2"><em class="font-italic">Review: {{$review->comment}}</em></p>
-                                                    <p class="p-2 rounded-lg bg-gray-100"><em class="font-italic">Reply:
-                                                            {{ $review->reply_comment ?? 'No reply yet' }}</em></p>
-                                                </div>
-                                                <div class="flex items-center">
-                                                    <span class="text-sm font-medium text-gray-600">Rating:</span>
-                                                    <span class="ml-1 text-yellow-500">
-                                                        @php
-                                                            $ratingMap = [
-                                                                'ONE' => 1,
-                                                                'TWO' => 2,
-                                                                'THREE' => 3,
-                                                                'FOUR' => 4,
-                                                                'FIVE' => 5,
-                                                            ];
+                    @foreach($location->reviews as $review)
+                            <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                                <div class="mb-2">
+                                    <div class="grid justify-between items-start">
+                                        <div class="grid order-2">
+                                            <p class="font-semibold">Review for {{ $location->title }}</p>
+                                            <p class="text-sm text-gray-500">Posted: {{ $review->created_at->format('M d, Y H:i') }}</p>
+                                            <div class="flex items-center mt-2">
+                                            <span class="text-sm font-medium text-gray-600">Rating:</span>
+                                            <span class="ml-1 text-yellow-500 w-max">
+                                                @php
+                                                    $ratingMap = [
+                                                        'ONE' => 1,
+                                                        'TWO' => 2,
+                                                        'THREE' => 3,
+                                                        'FOUR' => 4,
+                                                        'FIVE' => 5,
+                                                    ];
 
-                                                            $numericRating = $ratingMap[$review->star_rating] ?? 0;
-                                                        @endphp
+                                                    $numericRating = $ratingMap[$review->star_rating] ?? 0;
+                                                @endphp
 
-                                                        @for($i = 1; $i <= 5; $i++)
-                                                            @if($i <= $numericRating)
-                                                                ★
-                                                            @else
-                                                                ☆
-                                                            @endif
-                                                        @endfor
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div class="mt-2">
-                                                <p class="text-gray-600">{{ $review->content }}</p>
-                                            </div>
-
-                                            <!-- AI Replies -->
-                                            @if($review->aiReplies->isNotEmpty())
-                                                        <div class="mt-4 pl-4 border-l-2 border-blue-200">
-                                                            @php
-                                                                $uniqueReplies = $review->aiReplies
-                                                                    ->groupBy(function ($reply) {
-                                                                        // Group by exact timestamp
-                                                                        return $reply->created_at->format('Y-m-d H:i:s');
-                                                                    })
-                                                                    ->map(function ($group) {
-                                                                        // Take only the first entry from each group
-                                                                        return $group->first();
-                                                                    });
-                                                            @endphp
-
-                                                            @foreach($uniqueReplies as $aiReply)
-                                                                        <div class="mb-2">
-                                                                            <p class="text-sm font-medium text-blue-600">AI Generated Reply</p>
-                                                                            <p class="text-gray-600">{{ $aiReply->content }}</p>
-                                                                            <div class="mt-1 text-xs text-gray-500">
-                                                                                <span>Generated: {{ $aiReply->created_at->format('d-M-Y h:i:s A') }}</span>
-                                                                                @php
-                                                                                    $inputCost = $aiReply->input_tokens * 0.0375 / 1000000;
-                                                                                    $outputCost = $aiReply->output_tokens * 0.15 / 1000000;
-                                                                                    $totalCost = $inputCost + $outputCost;
-                                                                                @endphp
-                                                                                <span class="ml-2">Total Tokens:
-                                                                                    {{ $aiReply->input_tokens + $aiReply->output_tokens }}</span>
-                                                                                <span class="ml-2">Cost: ${{ number_format($totalCost, 6) }}</span>
-                                                                                <div class="mt-1">
-                                                                                    <span class="text-xs text-gray-400">Input Tokens:
-                                                                                        {{ $aiReply->input_tokens }}</span>
-                                                                                    <span class="ml-2 text-xs text-gray-400">Output Tokens:
-                                                                                        {{ $aiReply->output_tokens }}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                            @endforeach
-                                                        </div>
-                                            @else
-                                                <p class="mt-2 text-sm text-gray-500">No AI replies generated yet.</p>
-                                            @endif
+                                                @for($i = 1; $i <= 5; $i++)
+                                                    @if($i <= $numericRating)
+                                                        ★
+                                                    @else
+                                                        ☆
+                                                    @endif
+                                                @endfor
+                                            </span>
+                                        </div>
+                                            <p class="pt-2 mb-2"><em class="font-italic whitespace-pre-line">Review:
+                                                    {{$review->comment}}</em></p>
+                                            <p class="p-2 rounded-lg bg-gray-100"><em class="font-italic">Reply:
+                                                    {{ $review->reply_comment ?? 'No reply yet' }}</em></p>
                                         </div>
                                     </div>
-                        @endforeach
+
+                                    <div class="mt-2">
+                                        <p class="text-gray-600">{{ $review->content }}</p>
+                                    </div>
+
+                                    <!-- AI Replies -->
+                                    @if($review->aiReplies->isNotEmpty())
+                                                <div class="mt-4 pl-4 border-l-2 border-blue-200">
+                                                    @php
+                                                        $uniqueReplies = $review->aiReplies
+                                                            ->groupBy(function ($reply) {
+                                                                // Group by exact timestamp
+                                                                return $reply->created_at->format('Y-m-d H:i:s');
+                                                            })
+                                                            ->map(function ($group) {
+                                                                // Take only the first entry from each group
+                                                                return $group->first();
+                                                            });
+                                                    @endphp
+
+                                                    @foreach($uniqueReplies as $aiReply)
+                                                                <div class="mb-2">
+                                                                    <p class="text-sm font-medium text-blue-600">AI Generated Reply</p>
+                                                                    <p class="text-gray-600">{{ $aiReply->content }}</p>
+                                                                    <div class="mt-1 text-xs text-gray-500">
+                                                                        <span>Generated: {{ $aiReply->created_at->format('d-M-Y h:i:s A') }}</span>
+                                                                        @php
+                                                                            $inputCost = $aiReply->input_tokens * 0.0375 / 1000000;
+                                                                            $outputCost = $aiReply->output_tokens * 0.15 / 1000000;
+                                                                            $totalCost = $inputCost + $outputCost;
+                                                                        @endphp
+                                                                        <span class="ml-2">Total Tokens:
+                                                                            {{ $aiReply->input_tokens + $aiReply->output_tokens }}</span>
+                                                                        <span class="ml-2">Cost: ${{ number_format($totalCost, 6) }}</span>
+                                                                        <div class="mt-1">
+                                                                            <span class="text-xs text-gray-400">Input Tokens:
+                                                                                {{ $aiReply->input_tokens }}</span>
+                                                                            <span class="ml-2 text-xs text-gray-400">Output Tokens:
+                                                                                {{ $aiReply->output_tokens }}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                    @endforeach
+                                                </div>
+                                    @else
+                                        <p class="mt-2 text-sm text-gray-500">No AI replies generated yet.</p>
+                                    @endif
+                                </div>
+                            </div>
+                    @endforeach
             @empty
                 <div class="text-center py-8">
                     <p class="text-gray-500">No reviews found for this user's locations.</p>
@@ -170,5 +171,6 @@
         });
     </script>
 @endpush
+
 
 @endsection

@@ -18,9 +18,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(UrlGenerator $url)
     {
         // Force HTTPS in production or non-local environments
-        if (env('APP_ENV') !== 'local') {
-            $url->forceScheme('https');
-        }
+        // if (env('APP_ENV') !== 'local') {
+        //     $url->forceScheme('https');
+        // }
 
         // Register CORS Middleware
         $this->app['router']->aliasMiddleware('handle_cors', HandleCors::class);

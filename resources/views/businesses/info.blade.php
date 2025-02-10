@@ -53,8 +53,9 @@
                         <tr>
                             <td>{{ $location->title }}</td>
                             <td>{{ $location->primary_category }}</td>
-                            <td title="{{ $location->description ?: 'No description available' }}">
+                            <td class="custom-tooltip">
                                 {{ $location->description ?: 'No description available' }}
+                                <div class="tooltip-text">{{ $location->description ?: 'No description available' }}</div>
                             </td>
                             <td>{{ $location->formatted_address ?: 'Unknown address' }}</td>
                             <td>{{ $location->international_phone_number ?: 'Not available' }}</td>
@@ -268,8 +269,35 @@
 
     <style>
         :root {
-            --lineHeight: 1.79;
+            --lineHeight: 1.59;
             --clamp: 4;
+        }
+
+        .custom-tooltip {
+            position: relative;
+        }
+
+        .tooltip-text {
+            display: none;
+            position: absolute;
+            background: #333;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            top: calc(1rem* var(--lineHeight));
+            white-space: pre-wrap;
+            z-index: 1000;
+            height: max-content;
+        }
+
+        .custom-tooltip:hover {
+            overflow: visible !important;
+            color: transparent;
+
+            .tooltip-text {
+                display: block;
+                overflow: visible;
+            }
         }
 
         .business-selection-item {
@@ -558,7 +586,7 @@
                 td {
                     &:nth-child(3) {
                         display: -webkit-box;
-                        -webkit-line-clamp: var(--clamp);
+                        -webkit-line-clamp: calc(var(--clamp) + 1);
                         -webkit-box-orient: vertical;
                         overflow: hidden;
                         text-overflow: ellipsis;
@@ -566,7 +594,8 @@
                         border-radius: 0 !important;
                         height: calc(var(--clamp)* 1rem* var(--lineHeight));
                         font-size: 1rem;
-                        place-content: center;
+                        /* place-content: center; */
+                        white-space: pre-line;
                     }
 
                     &:last-child {

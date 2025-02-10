@@ -110,8 +110,9 @@
                                         @endphp
                                         {!! str_repeat('★', $stars) !!}{!! str_repeat('☆', 5 - $stars) !!}
                                     </td>
-                                    <td title="{{ $review->comment ?? 'No review text available' }}">
+                                    <td class="custom-tooltip">
                                         {{ $review->comment ?? 'No review text available' }}
+                                        <div class="tooltip-text">{{ $review->comment ?? 'No review text available' }}</div>
                                     </td>
                                     <td>{{ $review->reply_comment ?? 'No reply yet' }}</td>
                                     <td>
@@ -258,6 +259,37 @@
         :root {
             --lineHeight: 1.59;
             --clamp: 7;
+        }
+
+        .profile-avatar {
+            right: 0 !important;
+        }
+
+        .custom-tooltip {
+            position: relative;
+        }
+
+        .tooltip-text {
+            display: none;
+            position: absolute;
+            background: #333;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            top: calc(1rem* var(--lineHeight));
+            white-space: pre-wrap;
+            z-index: 1000;
+            height: max-content;
+        }
+
+        .custom-tooltip:hover {
+            overflow: visible !important;
+            color: transparent;
+
+            .tooltip-text {
+                display: block;
+                overflow: visible;
+            }
         }
 
         .card-content {
@@ -1151,7 +1183,7 @@
             const loadingSpinner = aiRepliesList.querySelector('.loading-spinner');
             if (loadingSpinner) loadingSpinner.style.display = 'block';
 
-            // Check reply status 
+            // Check reply status
             checkAndUpdateButtonStates(reviewId);
 
             // Fetch stored replies

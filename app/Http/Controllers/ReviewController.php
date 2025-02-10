@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use App\Services\GoogleAuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response;
 
 class ReviewController
 {
@@ -144,6 +145,19 @@ class ReviewController
                     $uri .= '?pageToken=' . $nextPageToken;
                 }
 
+                $googleId = auth()->user()->google_id;
+
+                $this->client = new GoogleAuthService(auth()->id());
+
+                $token = $this->client->ensureToken();
+
+                if (! $token || ! $googleId) {
+                    return $this->success(__('Token is missing. Redirecting to authorization.'), Response::HTTP_OK, [
+                        'error' => true,
+                        'auth_url' => $this->client->createAuthUrl(),
+                    ]);
+                }
+
                 $response = Http::withHeaders([
                     'Authorization' => "Bearer {$accessToken['access_token']}",
                     'Accept' => 'application/json',
@@ -168,7 +182,12 @@ class ReviewController
 
                                 $imageName = md5($imageUrl) . '.jpg';
 
-                                $savedImagePath = public_path('images/reviewers/' . $imageName);
+                                $savedImagePath = storage_path('app/public/images/reviewers/' . $imageName);
+
+                                // Ensure the directory exists
+                                if (!file_exists(dirname($savedImagePath))) {
+                                    mkdir(dirname($savedImagePath), 0755, true);
+                                }
 
                                 if (!file_exists($savedImagePath)) {
                                     try {
@@ -179,13 +198,14 @@ class ReviewController
                                     }
                                 }
 
+                                // Store the file path for public access
                                 Review::updateOrCreate([
                                     'review_id' => $review['reviewId']
                                 ], [
                                     'user_id' => $userId,
                                     'review_id' => $review['reviewId'],
                                     'reviewer_name' => $review['reviewer']['displayName'],
-                                    'profile_photo_url' => 'images/reviewers/' . $imageName,
+                                    'profile_photo_url' => 'storage/images/reviewers/' . $imageName,
                                     'star_rating' => $review['starRating'],
                                     'comment' => $review['comment'] ?? null,
                                     'create_time' => $createTime,
@@ -381,11 +401,11 @@ class ReviewController
             $location = Location::findOrFail($request->location_id);
 
             // Check if user is authorized to review this location
-            // if (Auth::user() && Auth::id() === $location->user_id) {
-            //     return response()->json([
-            //         'error' => 'Cannot review your own location'
-            //     ], 403);
-            // }
+            if (Auth::user() && Auth::id() === $location->user_id) {
+                return response()->json([
+                    'error' => 'Cannot review your own location'
+                ], 403);
+            }
 
             // Generate a unique review ID
             $reviewId = 'local_' . Str::uuid();
@@ -431,5 +451,18 @@ class ReviewController
                 'error' => 'Failed to create review'
             ], 500);
         }
+    }
+
+    protected function success(
+        string $message,
+        int $statusCode = Response::HTTP_OK,
+        array $data = [],
+        array $headers = []
+    ): JsonResponse {
+        return response()->json([
+            'status' => 'success',
+            'message' => $message,
+            ...$data,
+        ], $statusCode, $headers);
     }
 }

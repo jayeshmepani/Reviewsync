@@ -78,7 +78,7 @@ class GoogleAuthController
             Auth::login($user);
 
             return redirect()->route('dashboard')->with('status', 'Logged in successfully using Google!');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Google login error: ' . $e->getMessage());
             return redirect()->route('login')->withErrors([
                 'google' => 'There was an error logging in with Google. Please try again.',
@@ -149,7 +149,12 @@ class GoogleAuthController
 
                 $imageUrl = $profile['photos'][0]['url'] ?? null;
                 $imageName = md5($imageUrl) . '.jpg';
-                $savedImagePath = public_path('images/profiles/' . $imageName);
+                $savedImagePath = storage_path('app/public/images/profiles/' . $imageName);
+
+                // Ensure the directory exists
+                if (!file_exists(dirname($savedImagePath))) {
+                    mkdir(dirname($savedImagePath), 0755, true);
+                }
 
                 if (!file_exists($savedImagePath)) {
                     try {
@@ -165,7 +170,7 @@ class GoogleAuthController
                     'name' => $profileData['display_name'],
                     'last_name' => $profileData['last_name'],
                     'first_name' => $profileData['first_name'],
-                    'profile_picture' => 'images/profiles/' . $imageName,
+                    'profile_picture' => 'storage/images/profiles/' . $imageName,
                     'email' => $profileData['email'],
                     'google_id' => $account->getName(),
                     'password' => bcrypt('admin123'),
