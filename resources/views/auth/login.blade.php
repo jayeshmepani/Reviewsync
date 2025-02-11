@@ -143,6 +143,7 @@
         border-radius: 7.5px !important;
         padding-left: 1rem !important;
         width: -webkit-fill-available !important;
+        width: -moz-available !important;
     }
 
     .input-field {
@@ -166,6 +167,7 @@
 
     .center-align {
         width: -webkit-fill-available;
+        width: -moz-available;
 
         p {
             margin: 1rem 0 0.5rem;
@@ -217,6 +219,7 @@
         font-size: 14px;
         font-weight: 500;
         width: -webkit-fill-available;
+        width: -moz-available;
     }
 
     .or-separator::before,
@@ -263,6 +266,7 @@
         border-left: 1px solid !important;
         border-radius: 0 !important;
         width: -webkit-fill-available !important;
+        width: -moz-available !important;
         background: hsl(210 11% 85%/ 1) !important;
         -webkit-box-shadow: 0 0 0 0 rgb(0 0 0 / 0%) !important;
         box-shadow: 0 0 0 0 rgb(0 0 0 / 0%) !important;

@@ -170,7 +170,7 @@
             background: none;
         }
 
-        .center-align button{
+        .center-align button {
             border-radius: 9px !important;
         }
 
@@ -280,6 +280,7 @@
 
         .input-field {
             width: -webkit-fill-available !important;
+            width: -moz-available !important;
             position: relative;
             right: 0.5rem !important;
             margin-bottom: 1rem !important;
@@ -289,6 +290,7 @@
         input {
             padding: 0 1rem !important;
             width: -webkit-fill-available !important;
+            width: -moz-available !important;
             margin: 0 0 8px 16px !important;
         }
 

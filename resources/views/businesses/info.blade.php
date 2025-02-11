@@ -538,6 +538,7 @@
                 * {
                     float: inline-end;
                     width: -webkit-fill-available !important;
+                    width: -moz-available !important;
                 }
             }
         }

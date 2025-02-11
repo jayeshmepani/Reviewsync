@@ -78,6 +78,7 @@
                 justify-content: space-between;
                 align-items: center;
                 width: -webkit-fill-available !important;
+                width: -moz-available !important;
             }
         }
 

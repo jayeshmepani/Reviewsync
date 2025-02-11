@@ -153,6 +153,7 @@
 
             >* {
                 width: -webkit-fill-available;
+                width: -moz-available;
                 padding: 0.5rem;
                 border-radius: 0 !important;
                 font-size: 1rem !important;
@@ -391,6 +392,7 @@
                 align-items: center;
                 flex-direction: row;
                 width: -webkit-fill-available !important;
+                width: -moz-available !important;
             }
 
             .profile-avatar {
@@ -488,6 +490,7 @@
 
         .row>* {
             width: -webkit-fill-available !important;
+            width: -moz-available !important;
             margin: 0 !important;
             display: flex !important;
             flex-direction: column !important;

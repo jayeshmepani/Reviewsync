@@ -347,6 +347,17 @@
             transition: all 0.3s ease-in-out;
         }
 
+        .review-card {
+            container-type: inline-size;
+        }
+
+        @container (width > 620px){
+            .review-card {
+                grid-column: span 2;
+                width: 100%;
+            }
+        }
+
         .search-box {
             display: grid;
             background: white;
@@ -354,7 +365,6 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            grid-column: span 2;
             grid-auto-flow: column;
             align-items: center;
             justify-content: start;
@@ -556,6 +566,7 @@
 
             @media (width < 1200px) {
                 width: -webkit-fill-available;
+                width: -moz-available;
                 top: 99%;
                 right: 0;
                 justify-content: center;
@@ -577,6 +588,7 @@
             .profile-avatar>* {
                 max-width: 100%;
                 height: -webkit-fill-available;
+                width: -moz-available;
                 border-radius: 0.5rem !important;
             }
 
@@ -617,6 +629,7 @@
 
                         div[id*="replyForm"][style*="display: flex"] {
                             width: -webkit-fill-available;
+                            width: -moz-available;
                             height: 420px;
                             overflow: hidden;
                             background: aliceblue;
@@ -633,6 +646,7 @@
                             .position-relative {
                                 position: relative;
                                 width: -webkit-fill-available;
+                                width: -moz-available;
                                 margin: 1.5rem 3rem 1rem 3rem;
                                 display: grid;
                                 column-gap: 3rem;
@@ -798,7 +812,7 @@
                 padding: 1rem;
                 z-index: -1;
                 position: absolute;
-                padding-top: 4rem;
+                padding-top: 4.9rem;
 
                 @media (width <=768px) {
                     transform: translateX(-1rem);
@@ -982,6 +996,7 @@
                 * {
                     float: inline-end;
                     width: -webkit-fill-available !important;
+                    width: -moz-available !important;
                 }
             }
         }
@@ -1340,4 +1355,3 @@
         }
     </script>
 @endpush
-
