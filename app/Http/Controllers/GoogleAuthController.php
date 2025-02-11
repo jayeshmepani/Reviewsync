@@ -60,12 +60,12 @@ class GoogleAuthController
             ->redirect();
     }
 
+
     public function handleGoogleSignInCallback(Request $request)
     {
         try {
             $googleUser = Socialite::driver('google')->user();
 
-            // Check if the email exists in the database
             $user = User::where('email', $googleUser->getEmail())->first();
 
             if (!$user) {
@@ -74,7 +74,28 @@ class GoogleAuthController
                 ]);
             }
 
-            // Log the user in
+            if ($imageUrl = $googleUser->getAvatar()) {
+                $imageName = md5($imageUrl) . '.jpg';
+                $savedImagePath = storage_path('app/public/images/profiles/' . $imageName);
+
+                if (!file_exists(dirname($savedImagePath))) {
+                    mkdir(dirname($savedImagePath), 0755, true);
+                }
+
+                try {
+                    $imageContents = file_get_contents($imageUrl);
+                    if ($imageContents !== false) {
+                        file_put_contents($savedImagePath, $imageContents);
+
+                        $user->update([
+                            'profile_picture' => 'storage/images/profiles/' . $imageName
+                        ]);
+                    }
+                } catch (Exception $e) {
+                    Log::error('Failed to save profile image: ' . $e->getMessage());
+                }
+            }
+
             Auth::login($user);
 
             return redirect()->route('dashboard')->with('status', 'Logged in successfully using Google!');
