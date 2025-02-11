@@ -60,7 +60,8 @@
                             <td>{{ $location->formatted_address ?: 'Unknown address' }}</td>
                             <td>{{ $location->international_phone_number ?: 'Not available' }}</td>
                             <td>
-                                <a style="color: blue;" href="{{ $location->website }}" target="_blank"
+                                <a style="color: blue; {{ !$location->website ? 'pointer-events: none; cursor: default; color: gray;' : '' }}"
+                                    href="{{ $location->website ?: '#' }}" target="_blank" rel="noopener noreferrer"
                                     title="{{ $location->website ?: 'Not available' }}">
                                     {{ $location->website ? 'Visit Site' : 'Not available' }}
                                 </a>
