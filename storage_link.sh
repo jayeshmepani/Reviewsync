@@ -1,18 +1,14 @@
-
 #!/bin/bash
 
-STORAGE_LINK="/app/public/storage"
+storage_link="/public/storage"
 
-# Check if the storage symlink exists
-if [ -L "$STORAGE_LINK" ]; then
+# Check if storage symlink exists
+if [ -L "$storage_link" ]; then
     echo "Storage symlink exists. Removing..."
-    rm -f "$STORAGE_LINK"
-elif [ -e "$STORAGE_LINK" ]; then
-    echo "A file or folder named 'storage' exists, but it's not a symlink. Removing..."
-    rm -rf "$STORAGE_LINK"
+    rm -f "$storage_link"
 fi
 
-# Recreate the storage symlink
+# Recreate the storage link
 echo "Creating new storage link..."
 php artisan storage:link
 echo "Storage link created successfully!"
