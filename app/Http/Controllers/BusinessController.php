@@ -21,7 +21,7 @@ class BusinessController
 
         $business->delete();
 
-        return redirect()->route('businesses.info')->with('success', 'Business deleted successfully!');
+        return redirect()->route('businesses')->with('success', 'Business deleted successfully!');
     }
 
     public function showDashboard()
